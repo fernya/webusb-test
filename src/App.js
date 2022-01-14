@@ -41,19 +41,28 @@ async function HelloWorldEventDriven() {
     console.log("App lists:", app_list);
 
     if (app_ver.name !== ETHEREUM_APP_NAME) {
-      navigator.usb.addEventListener('connect', async (event) => {
-        transport = await TransportWebUSB.create();
+      navigator.usb.addEventListener('connect', async function cb(event) {
+        try {
+          navigator.usb.removeEventListener('connect', cb);
 
-        const app_ver = await getAppAndVersion(transport);
+          transport = await TransportWebUSB.create();
 
-        if (app_ver.name !== ETHEREUM_APP_NAME) {
-          // handle error
-        } else {
-          const eth = new Eth(transport);
-          const eth_ver = await eth.getAppConfiguration();
-          console.log("Current Ethereum app version is:", eth_ver);
+          const app_ver = await getAppAndVersion(transport);
+
+          if (app_ver.name !== ETHEREUM_APP_NAME) {
+            // handle error
+          } else {
+            const eth = new Eth(transport);
+            const conf = await eth.getAppConfiguration();
+            console.log("Current Ethereum app version is:", conf.version);
+          }
+        } finally {
+
+          if (transport) await transport.close();
+          console.log("Closed transport!");
         }
       });
+
       await openApp(transport, ETHEREUM_APP_NAME);
 
       console.log("openApp succeeded");
